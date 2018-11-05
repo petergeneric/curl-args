@@ -1,0 +1,23 @@
+#!/bin/bash
+
+ARGS=()
+
+if [ "$1" == "--trace" ] ; then
+	shift
+
+	if [ -z "$CORRELATION_ID" ] ; then
+		CORRELATION_ID="$(whoami)$(date +%H%M%S)"
+	fi
+
+	ARGS+=('-H')
+	ARGS+=('X-Trace-Verbose: true')
+	ARGS+=('-H')
+	ARGS+=("X-Correlation-ID: $CORRELATION_ID")
+fi
+
+. ~/.ccurl_rc
+
+ARGS+=( "$@" "$@" )
+
+
+exec curl "${ARGS[@]}"
