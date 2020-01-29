@@ -2,6 +2,8 @@
 
 ARGS=()
 
+. ~/.ccurl_rc
+
 if [ "$1" == "--trace" ] ; then
 	shift
 
@@ -14,8 +16,6 @@ if [ "$1" == "--trace" ] ; then
 	ARGS+=('-H')
 	ARGS+=("X-Correlation-ID: $CORRELATION_ID")
 fi
-
-. ~/.ccurl_rc
 
 ARGS+=( "$@" "$@" )
 
