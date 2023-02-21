@@ -1,0 +1,22 @@
+{
+	"auth": {
+		"keys": {
+			"service-live": "Bearer UMB/...",
+			"service-test": "Bearer UMB/...",
+		},
+		"hosts": {
+			"dev1.example.org": "service-test",
+			"dev2.example.org": "service-test",
+			
+			"prd1.example.org": "service-live",
+			"prd2.example.org": "service-live"
+		}
+	},
+	"opts": {
+		"hosts": {
+			"dev1.example.org": ["--insecure"],
+			"dev2.example.org" :["--http2-prior-knowledge"]
+		},
+		"defaultAccept": "application/xml, application/json, */*"
+	}
+}
