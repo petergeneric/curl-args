@@ -77,25 +77,21 @@ fn main() -> Result<()> {
 	}
 
 
-    // Test if there are any special flags (e.g. '--trace'). If found, replace them with their corresponding headers
-    if let Some(index) = curl_args.iter().position(|arg| arg == "--trace") {
+    // Handle --trace flag: remove all occurrences and add tracing headers
+    let has_trace = curl_args.iter().any(|arg| arg == "--trace");
+    curl_args.retain(|arg| arg != "--trace");
+    if has_trace {
         let now = chrono::Local::now();
-        let trace_header = format!(
+        extra.push("-H".to_owned());
+        extra.push("X-Trace-Verbose: true".to_owned());
+        extra.push("-H".to_owned());
+        extra.push(format!(
             "X-Correlation-ID: {}/{}{}{}",
             whoami::username(),
             now.hour(),
             now.minute(),
             now.second()
-        );
-        
-        let trace_args = vec![
-            "-H".to_owned(),
-            "X-Trace-Verbose: true".to_owned(),
-            "-H".to_owned(),
-            trace_header
-        ];
-        extra.extend(trace_args);
-        curl_args.remove(index);
+        ));
     }
 
 
