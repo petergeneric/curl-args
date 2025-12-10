@@ -1,2 +1,3 @@
-.ccurl_rc
+.ccurlrc
 target/
+.DS_Store
