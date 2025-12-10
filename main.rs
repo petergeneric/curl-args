@@ -1,9 +1,15 @@
 use anyhow::{Context, Result};
 use chrono::Timelike;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fs;
 use std::process::{Command, Stdio};
 use url::Url;
+
+/// Finds the first matching value for any hostname in the given map
+fn find_for_hostname<'a, V>(hostnames: &[String], map: &'a HashMap<String, V>) -> Option<&'a V> {
+    hostnames.iter().find_map(|h| map.get(h))
+}
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -13,15 +19,15 @@ struct Config {
 
 #[derive(Debug, Deserialize)]
 struct Opts {
-    hosts: std::collections::HashMap<String, Vec<String>>,
+    hosts: HashMap<String, Vec<String>>,
     #[serde(rename = "defaultAccept")]
     default_accept: String,
 }
 
 #[derive(Debug, Deserialize)]
 struct Auth {
-    hosts: std::collections::HashMap<String, String>,
-    keys: std::collections::HashMap<String, String>,
+    hosts: HashMap<String, String>,
+    keys: HashMap<String, String>,
 }
 
 fn main() -> Result<()> {
@@ -51,26 +57,15 @@ fn main() -> Result<()> {
         .collect();
 
     // Read the options associated with this hostname from config
-    for hostname in &hostnames {
-        if let Some(opt_array) = config.opts.hosts.get(hostname) {
-            extra.extend(opt_array.iter().cloned());
-            break;
-        }
+    if let Some(opt_array) = find_for_hostname(&hostnames, &config.opts.hosts) {
+        extra.extend(opt_array.iter().cloned());
     }
 
     // Read the Authorization header value associated with this hostname from config
-    for hostname in &hostnames {
-        if let Some(key) = config.auth.hosts.get(hostname) {
-            // If the key is an alias, resolve it
-            let key = if let Some(resolved_key) = config.auth.keys.get(key) {
-                resolved_key
-            } else {
-                key
-            };
-            // Add the Authorization header to the arg list
-            extra.extend(vec!["-H".to_owned(), format!("Authorization: {}", key)]);
-            break;
-        }
+    if let Some(key) = find_for_hostname(&hostnames, &config.auth.hosts) {
+        let resolved_key = config.auth.keys.get(key).unwrap_or(key);
+        extra.push("-H".to_owned());
+        extra.push(format!("Authorization: {}", resolved_key));
     }
 
     // If curlArgs does not already have an Accept header, apply the default one from config
