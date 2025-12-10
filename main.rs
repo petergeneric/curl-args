@@ -68,13 +68,14 @@ fn main() -> Result<()> {
         extra.push(format!("Authorization: {}", resolved_key));
     }
 
-    // If curlArgs does not already have an Accept header, apply the default one from config
-	if !curl_args
-		.iter()
-		.any(|arg| arg.to_lowercase().starts_with("accept:"))
-	{
-		extra.extend(vec!["-H".to_owned(), config.opts.default_accept.clone()]);
-	}
+    // If curl_args does not already have an Accept header, apply the default one from config
+    let has_accept = curl_args.windows(2).any(|pair| {
+        pair[0] == "-H" && pair[1].to_lowercase().trim_start().starts_with("accept:")
+    });
+    if !has_accept {
+        extra.push("-H".to_owned());
+        extra.push(format!("Accept: {}", config.opts.default_accept));
+    }
 
 
     // Handle --trace flag: remove all occurrences and add tracing headers
