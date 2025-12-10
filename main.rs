@@ -1,10 +1,9 @@
+use anyhow::{Context, Result};
+use chrono::Timelike;
 use serde::Deserialize;
 use std::fs;
 use std::process::{Command, Stdio};
 use url::Url;
-use whoami;
-use chrono;
-use chrono::Timelike;
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -25,7 +24,7 @@ struct Auth {
     keys: std::collections::HashMap<String, String>,
 }
 
-fn main() {
+fn main() -> Result<()> {
     // Read the config file
     let home_dir = match dirs::home_dir() {
         Some(path) => path,
@@ -116,4 +115,7 @@ fn main() {
     let mut child_process = cmd.spawn().unwrap();
     let child_process_exit_code = child_process.wait().unwrap().code().unwrap();
     std::process::exit(child_process_exit_code);
+
+    #[allow(unreachable_code)]
+    Ok(())
 }
