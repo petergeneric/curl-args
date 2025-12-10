@@ -11,22 +11,40 @@ fn find_for_hostname<'a, V>(hostnames: &[String], map: &'a HashMap<String, V>) -
     hostnames.iter().find_map(|h| map.get(h))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 struct Config {
+    #[serde(default)]
     opts: Opts,
+    #[serde(default)]
     auth: Auth,
 }
 
 #[derive(Debug, Deserialize)]
 struct Opts {
+    #[serde(default)]
     hosts: HashMap<String, Vec<String>>,
-    #[serde(rename = "defaultAccept")]
+    #[serde(rename = "defaultAccept", default = "default_accept")]
     default_accept: String,
 }
 
-#[derive(Debug, Deserialize)]
+fn default_accept() -> String {
+    "application/json, */*".to_owned()
+}
+
+impl Default for Opts {
+    fn default() -> Self {
+        Opts {
+            hosts: HashMap::new(),
+            default_accept: default_accept(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Default)]
 struct Auth {
+    #[serde(default)]
     hosts: HashMap<String, String>,
+    #[serde(default)]
     keys: HashMap<String, String>,
 }
 
@@ -69,10 +87,17 @@ fn main() -> Result<()> {
         eprintln!("[ccurl] Config: {}", config_path.display());
     }
 
-    let config_str = fs::read_to_string(&config_path)
-        .with_context(|| format!("Could not read config file: {}", config_path.display()))?;
-    let config: Config = serde_json::from_str(&config_str)
-        .with_context(|| format!("Invalid JSON in config file: {}", config_path.display()))?;
+    let config: Config = if config_path.exists() {
+        let config_str = fs::read_to_string(&config_path)
+            .with_context(|| format!("Could not read config file: {}", config_path.display()))?;
+        serde_json::from_str(&config_str)
+            .with_context(|| format!("Invalid JSON in config file: {}", config_path.display()))?
+    } else {
+        if verbose {
+            eprintln!("[ccurl] Config file not found, using defaults");
+        }
+        Config::default()
+    };
     let mut extra: Vec<String> = vec![];
 
     // Find hostnames from the command line args
