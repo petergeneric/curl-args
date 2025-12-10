@@ -43,12 +43,11 @@ fn main() -> Result<()> {
     let hostnames: Vec<String> = curl_args
         .iter()
         .filter(|opt| !opt.starts_with('-') && opt.contains("://"))
-        .map(|opt| match Url::parse(opt) {
-            Ok(url) => Some(url.host_str().unwrap().to_lowercase()),
-            Err(_) => None,
+        .filter_map(|opt| {
+            Url::parse(opt)
+                .ok()
+                .and_then(|url| url.host_str().map(|h| h.to_lowercase()))
         })
-        .filter(|hostname| hostname.is_some())
-        .map(|hostname| hostname.unwrap())
         .collect();
 
     // Read the options associated with this hostname from config
