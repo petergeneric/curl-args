@@ -154,18 +154,17 @@ fn main() -> Result<()> {
         ));
     }
 
-
     if verbose {
         eprintln!("[ccurl] Extra args: {:?}", extra);
     }
 
     // Run the child process
-    let mut cmd = Command::new("curl");
-    cmd.args(extra.iter().chain(curl_args.iter()));
-    cmd.stdin(Stdio::inherit());
-    cmd.stdout(Stdio::inherit());
-    cmd.stderr(Stdio::inherit());
-    let mut child_process = cmd.spawn()
+    let mut child_process = Command::new("curl")
+        .args(extra.iter().chain(curl_args.iter()))
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()
         .context("Failed to execute curl. Is curl installed and in PATH?")?;
     let exit_status = child_process.wait()
         .context("Failed to wait for curl process")?;
