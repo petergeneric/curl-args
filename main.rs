@@ -38,8 +38,9 @@ USAGE:
     ccurl [OPTIONS] [curl arguments...]
 
 SPECIAL FLAGS:
-    --help      Show this help message
-    --trace     Add X-Correlation-ID and X-Trace-Verbose headers
+    --help          Show this help message
+    --trace         Add X-Correlation-ID and X-Trace-Verbose headers
+    --ccurlverbose  Show debug information
 
 CONFIG:
     Reads from ~/.ccurlrc (JSON format)
@@ -56,18 +57,22 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    let verbose = args.iter().any(|arg| arg == "--ccurlverbose");
+    let mut curl_args: Vec<String> = args.into_iter().filter(|arg| arg != "--ccurlverbose").collect();
+
     // Read the config file
     let home_dir = dirs::home_dir()
         .context("Could not determine home directory")?;
     let config_path = home_dir.join(".ccurlrc");
 
+    if verbose {
+        eprintln!("[ccurl] Config: {}", config_path.display());
+    }
+
     let config_str = fs::read_to_string(&config_path)
         .with_context(|| format!("Could not read config file: {}", config_path.display()))?;
     let config: Config = serde_json::from_str(&config_str)
         .with_context(|| format!("Invalid JSON in config file: {}", config_path.display()))?;
-
-    // Store our commandline args
-    let mut curl_args = args;
     let mut extra: Vec<String> = vec![];
 
     // Find hostnames from the command line args
@@ -80,6 +85,10 @@ fn main() -> Result<()> {
                 .and_then(|url| url.host_str().map(|h| h.to_lowercase()))
         })
         .collect();
+
+    if verbose {
+        eprintln!("[ccurl] Hostnames: {:?}", hostnames);
+    }
 
     // Read the options associated with this hostname from config
     if let Some(opt_array) = find_for_hostname(&hostnames, &config.opts.hosts) {
@@ -120,6 +129,10 @@ fn main() -> Result<()> {
         ));
     }
 
+
+    if verbose {
+        eprintln!("[ccurl] Extra args: {:?}", extra);
+    }
 
     // Run the child process
     let mut cmd = Command::new("curl");
