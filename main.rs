@@ -30,7 +30,32 @@ struct Auth {
     keys: HashMap<String, String>,
 }
 
+fn print_help() {
+    println!(
+        "ccurl {} - curl wrapper with automatic auth injection
+
+USAGE:
+    ccurl [OPTIONS] [curl arguments...]
+
+SPECIAL FLAGS:
+    --help      Show this help message
+    --trace     Add X-Correlation-ID and X-Trace-Verbose headers
+
+CONFIG:
+    Reads from ~/.ccurlrc (JSON format)
+    See ccurlrc.example.json for configuration options.",
+        env!("CARGO_PKG_VERSION")
+    );
+}
+
 fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+
+    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        print_help();
+        return Ok(());
+    }
+
     // Read the config file
     let home_dir = dirs::home_dir()
         .context("Could not determine home directory")?;
@@ -42,7 +67,7 @@ fn main() -> Result<()> {
         .with_context(|| format!("Invalid JSON in config file: {}", config_path.display()))?;
 
     // Store our commandline args
-    let mut curl_args: Vec<String> = std::env::args().skip(1).collect();
+    let mut curl_args = args;
     let mut extra: Vec<String> = vec![];
 
     // Find hostnames from the command line args
