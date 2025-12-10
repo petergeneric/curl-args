@@ -61,7 +61,7 @@ SPECIAL FLAGS:
     --ccurlverbose  Show debug information
 
 CONFIG:
-    Reads from ~/.ccurlrc (JSON format)
+    Reads from ~/.ccurlrc (JSON5 format - supports comments and trailing commas)
     See ccurlrc.example.json for configuration options.",
         env!("CARGO_PKG_VERSION")
     );
@@ -90,8 +90,8 @@ fn main() -> Result<()> {
     let config: Config = if config_path.exists() {
         let config_str = fs::read_to_string(&config_path)
             .with_context(|| format!("Could not read config file: {}", config_path.display()))?;
-        serde_json::from_str(&config_str)
-            .with_context(|| format!("Invalid JSON in config file: {}", config_path.display()))?
+        json5::from_str(&config_str)
+            .with_context(|| format!("Invalid JSON5 in config file: {}", config_path.display()))?
     } else {
         if verbose {
             eprintln!("[ccurl] Config file not found, using defaults");
