@@ -26,15 +26,14 @@ struct Auth {
 
 fn main() -> Result<()> {
     // Read the config file
-    let home_dir = match dirs::home_dir() {
-        Some(path) => path,
-        None => panic!("Couldn't find home directory"),
-    };
+    let home_dir = dirs::home_dir()
+        .context("Could not determine home directory")?;
     let config_path = home_dir.join(".ccurlrc");
 
-    // Read the config file
-    let config_str = fs::read_to_string(&config_path).unwrap();
-    let config: Config = serde_json::from_str(&config_str).unwrap();
+    let config_str = fs::read_to_string(&config_path)
+        .with_context(|| format!("Could not read config file: {}", config_path.display()))?;
+    let config: Config = serde_json::from_str(&config_str)
+        .with_context(|| format!("Invalid JSON in config file: {}", config_path.display()))?;
 
     // Store our commandline args
     let mut curl_args: Vec<String> = std::env::args().skip(1).collect();
@@ -112,10 +111,9 @@ fn main() -> Result<()> {
     cmd.stdin(Stdio::inherit());
     cmd.stdout(Stdio::inherit());
     cmd.stderr(Stdio::inherit());
-    let mut child_process = cmd.spawn().unwrap();
-    let child_process_exit_code = child_process.wait().unwrap().code().unwrap();
-    std::process::exit(child_process_exit_code);
-
-    #[allow(unreachable_code)]
-    Ok(())
+    let mut child_process = cmd.spawn()
+        .context("Failed to execute curl. Is curl installed and in PATH?")?;
+    let exit_status = child_process.wait()
+        .context("Failed to wait for curl process")?;
+    std::process::exit(exit_status.code().unwrap_or(1))
 }
